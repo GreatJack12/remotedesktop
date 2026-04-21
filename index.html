@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Remote Desktop</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0d0d0d;
+      color: #eee;
+      font-family: 'Segoe UI', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #connect-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 16px;
+    }
+
+    #connect-screen h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    #connect-screen p {
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 320px;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-group input {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      border-color: #4f8ef7;
+    }
+
+    .host-row {
+      display: flex;
+      align-items: center;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .host-row:focus-within { border-color: #4f8ef7; }
+
+    .host-prefix {
+      padding: 10px 10px 10px 14px;
+      color: #555;
+      font-size: 0.95rem;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .host-row input {
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 10px 14px 10px 0;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .host-row input:focus { border-color: transparent; }
+
+    #connect-btn {
+      width: 320px;
+      padding: 12px;
+      background: #4f8ef7;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    #connect-btn:hover { background: #3a7de0; }
+
+    #status-msg {
+      font-size: 0.85rem;
+      color: #f87171;
+      min-height: 20px;
+    }
+
+    #remote-screen {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 16px;
+      background: #111;
+      border-bottom: 1px solid #222;
+      flex-shrink: 0;
+    }
+
+    #toolbar span {
+      font-size: 0.8rem;
+      color: #888;
+    }
+
+    #toolbar .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #22c55e;
+      flex-shrink: 0;
+    }
+
+    #toolbar .dot.disconnected { background: #ef4444; }
+
+    #disconnect-btn {
+      margin-left: auto;
+      padding: 5px 14px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #ccc;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    #disconnect-btn:hover { background: #3a3a3a; }
+
+    #fullscreen-btn {
+      padding: 5px 14px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #ccc;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    #fullscreen-btn:hover { background: #3a3a3a; }
+
+    #fps-display {
+      font-size: 0.75rem;
+      color: #555;
+    }
+
+    #canvas-container {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      cursor: none;
+    }
+
+    #screen-canvas {
+      display: block;
+      cursor: none;
+      max-width: 100%;
+      max-height: 100%;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    #canvas-container:fullscreen,
+    #canvas-container:-webkit-full-screen {
+      background: #000;
+    }
+
+    #canvas-container:fullscreen #screen-canvas,
+    #canvas-container:-webkit-full-screen #screen-canvas {
+      width: 100vw;
+      height: 100vh;
+      object-fit: contain;
+    }
+
+    #custom-cursor {
+      position: fixed;
+      width: 14px;
+      height: 14px;
+      border: 2px solid #4f8ef7;
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+      transition: transform 0.05s;
+    }
+
+    #custom-cursor.clicking {
+      transform: translate(-50%, -50%) scale(0.7);
+      background: rgba(79,142,247,0.4);
+    }
+  </style>
+</head>
+<body>
+
+<div id="custom-cursor"></div>
+
+<!-- Connect Screen -->
+<div id="connect-screen">
+  <h1>🖥️ Remote Desktop</h1>
+  <p>Connect to your PC from anywhere</p>
+
+  <div class="form-group">
+    <label>Tunnel ID</label>
+    <div class="host-row">
+      <span class="host-prefix">wss://</span>
+      <input id="host-input" type="text" placeholder="xxxx" autofocus />
+      <span class="host-prefix">.trycloudflare.com</span>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Secret</label>
+    <input id="secret-input" type="password" placeholder="Your secret key" />
+  </div>
+
+  <button id="connect-btn">Connect</button>
+  <button id="forget-btn" style="width:320px;padding:8px;background:transparent;border:1px solid #333;border-radius:8px;color:#666;font-size:0.85rem;cursor:pointer;">Forget saved address</button>
+  <div id="status-msg"></div>
+</div>
+
+<!-- Remote Screen -->
+<div id="remote-screen">
+  <div id="toolbar">
+    <div class="dot" id="conn-dot"></div>
+    <span id="conn-label">Connected</span>
+    <span id="fps-display">-- fps</span>
+    <button id="disconnect-btn">Disconnect</button>
+    <button id="fullscreen-btn">⛶ Fullscreen</button>
+  </div>
+  <div id="canvas-container">
+    <canvas id="screen-canvas"></canvas>
+  </div>
+</div>
+
+<script src="client.js"></script>
+</body>
+</html>
